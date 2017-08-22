@@ -2,18 +2,21 @@
 
 
 namespace app\models;
-use yii\db\ActiveRecord;
+use yii\base\Model;
 
 
-class MessageForm extends ActiveRecord
+class MessageForm extends Model
 {
 
-//    public $name;
-//    public $homepage;
-//    public $captcha;
-
-//$userHost = Yii::$app->request->userHost;
-
+    public $user_name;
+    public $homepage;
+    public $captcha;
+    public $browser;
+    public $date_time;
+    public $ip;
+    public $email;
+    public $home_page;
+    public $text;
 
 
     public static function tableName()
@@ -22,18 +25,19 @@ class MessageForm extends ActiveRecord
         return 'messages';
     }
 
+
+
     public function rules()
     {
         return[
-          [['user_name','email', 'captcha', 'text'], 'required' ]  ,
-          //  ['name', 'format' => '^[a-zA-Z0-9]+$'],
-            ['email', 'email'],
-//            ['home_page', 'url', 'defaultScheme' => 'http'],
-           ['captcha', 'captcha'],
-           ['user_name', 'match', 'pattern' => '/^[a-zA-Z0-9]+$/'],
-          ['home_page' ,  'url', 'defaultScheme' => 'http'],
+//            [['user_name','email', 'captcha', 'text'], 'required' ]  ,
+//            ['email', 'email'],
+            ['captcha', 'captcha'],
+//            ['user_name', 'match', 'pattern' => '/^[a-zA-Z0-9]+$/'],
+//            ['home_page' ,  'url', 'defaultScheme' => 'http'],
+//            [['user_name','email','captcha' ,'home_page' ,'captcha' ,'text'],'filter','filter'=>'\yii\helpers\HtmlPurifier::process']
 
-            [['user_name','email','captcha' ,'home_page' ,'captcha' ,'text'],'filter','filter'=>'\yii\helpers\HtmlPurifier::process']
         ];
     }
+
 }

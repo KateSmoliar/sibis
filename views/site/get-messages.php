@@ -8,8 +8,6 @@ use yii\widgets\LinkPager;
 
 
 
-
-
     <div class = " col-lg-10 col-md-10 col-sm-10 col-xs-10" >
 
     <table class="table " >
@@ -27,20 +25,23 @@ use yii\widgets\LinkPager;
 
             </div>
         </tr>
-        <?php foreach ($messages as $message) {
+        <?php
+        $id = 0;
+        foreach ( $messages as $message) {
+            $id ++;
 
             ?>
 
 
             <tr>
-                <td><?= $message->user_name ?></td>
-                <td><?= $message->email ?></td>
-                <td><?= $message->date_time ?></td>
-                <td><?= $message->text ?></td>
+                <td><?= $message['user_name'] ?></td>
+                <td><?= $message['email'] ?></td>
+                <td><?= $message['date_time'] ?></td>
+                <td><?= $message['text'] ?></td>
 
 
 
-                <td> <a href = '<?= $url. $message->id?>'><div class = "btn btn-default" id = 'delete'>DELETE</div></a></td>
+                <td> <a href = '<?= $url. $message['id']?>'><div class = "btn btn-default" id = '<?="delete".$id ?>'>DELETE</div></a></td>
 
             </tr>
 
@@ -77,16 +78,16 @@ use yii\widgets\LinkPager;
 
                 </div>
             </tr>
-            <?php foreach ($messages as $message) {
+            <?php foreach ($messages_load as $message) {
 
                 ?>
 
 
                 <tr>
-                    <td><?= $message->user_name ?></td>
-                    <td><?= $message->email ?></td>
-                    <td><?= $message->date_time ?></td>
-                    <td><?= $message->text ?></td>
+                    <td><?= $message['user_name'] ?></td>
+                    <td><?= $message['email'] ?></td>
+                    <td><?= $message['date_time'] ?></td>
+                    <td><?= $message['text'] ?></td>
 
 
                 </tr>

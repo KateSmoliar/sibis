@@ -20,10 +20,15 @@ class AppAsset extends AssetBundle
     public $css = [
         'css/main.css',
     ];
+    public $jsOptions = ['position' => \yii\web\View::POS_HEAD];
     public $js = [
+
+
+
     ];
     public $depends = [
         'yii\web\YiiAsset',
         'yii\bootstrap\BootstrapAsset',
+
     ];
 }

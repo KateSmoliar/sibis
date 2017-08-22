@@ -6,12 +6,13 @@ use Yii;
 use yii\filters\AccessControl;
 use yii\web\Controller;
 use yii\filters\VerbFilter;
-use app\models\LoginForm;
+//use app\models\LoginForm;
 use app\models\ContactForm;
 use app\models\MessageForm;
 use yii\data\Pagination;
 use app\models\Messages;
 use yii\helpers\html;
+use yii\db\Connection;
 
 class SiteController extends Controller
 {
@@ -44,6 +45,9 @@ class SiteController extends Controller
     /**
      * @inheritdoc
      */
+
+
+
     public function actions()
     {
         return [
@@ -51,7 +55,8 @@ class SiteController extends Controller
                 'class' => 'yii\web\ErrorAction',
             ],
             'captcha' => [
-                'class' => 'yii\captcha\CaptchaAction',
+//                'class' => 'yii\captcha\CaptchaAction',
+                'class' => 'yii\captcha\MyCaptcha',
                 'fixedVerifyCode' => YII_ENV_TEST ? 'testme' : null,
             ],
         ];
@@ -67,70 +72,14 @@ class SiteController extends Controller
         return $this->render('index');
     }
 
-    /**
-     * Login action.
-     *
-     * @return string
-     */
-    public function actionLogin()
-    {
-        if (!Yii::$app->user->isGuest) {
-            return $this->goHome();
-        }
 
-        $model = new LoginForm();
-        if ($model->load(Yii::$app->request->post()) && $model->login()) {
-            return $this->goBack();
-        }
-        return $this->render('login', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Logout action.
-     *
-     * @return string
-     */
-    public function actionLogout()
-    {
-        Yii::$app->user->logout();
-
-        return $this->goHome();
-    }
-
-    /**
-     * Displays contact page.
-     *
-     * @return string
-     */
-    public function actionContact()
-    {
-        $model = new ContactForm();
-        if ($model->load(Yii::$app->request->post()) && $model->contact(Yii::$app->params['adminEmail'])) {
-            Yii::$app->session->setFlash('contactFormSubmitted');
-
-            return $this->refresh();
-        }
-        return $this->render('contact', [
-            'model' => $model,
-        ]);
-    }
-
-    /**
-     * Displays about page.
-     *
-     * @return string
-     */
-    public function actionAbout()
-    {
-        return $this->render('about');
-    }
 
 
     public function actionMessages()
     {
+
         $form = new MessageForm();
+
 
         $user_agent = $_SERVER["HTTP_USER_AGENT"];
         if (strpos($user_agent, "Firefox") !== false)  $form->browser = "Firefox";
@@ -138,44 +87,49 @@ class SiteController extends Controller
         elseif (strpos($user_agent, "Chrome") !== false) $form->browser = "Chrome";
         elseif (strpos($user_agent, "MSIE") !== false) $form->browser = "Internet Explorer";
         elseif (strpos($user_agent, "Safari") !== false) $form->browser = "Safari";
+
         else $form->browser = "Unknown";
         $form->date_time = date('Y-m-d H:i:s');
-
-
         $form->ip =  Yii::$app->request->userIP;
 
-        if ($form->load(Yii::$app->request->post())) {
+        $user_name = Html::encode($_POST['MessageForm']['user_name']);
+        $email = Html::encode($_POST['MessageForm']['email']);
+        $home_page = Html::encode($_POST['MessageForm']['home_page']);
+        $text = Html::encode($_POST['MessageForm']['text']);
+        $captcha = Html::encode($_POST['MessageForm']['captcha']);
 
-            if ($form->save())
+
+
+        if ($_POST)
             {
-                Yii::$app->session->setFlash('success' , 'ok');
-                return $this->refresh();
-              ?>
-                <script>
-            alert("Your message successfully add");
-                </script>
-<?php
-
-            }
-            else
-            {
-                Yii::$app->session->setFlash('error', 'error');
-            }
-            $user_name = Html::encode($form->user_name);
-            $email = Html::encode($form->email);
-
-
-        } else {
-            $user_name = '';
-            $email = '';
-        }
-
-        return $this->render('messages',
-            ['form' => $form,
+                Yii::$app->db->createCommand()->insert('messages', [
                 'user_name' => $user_name,
                 'email' => $email,
-                 'captcha' => [
-        'class' => 'yii\captcha\CaptchaAction',
+                'home_page'=>$home_page,
+                'text'=>$text,
+                'captcha'=>$captcha,
+                'date_time'=>$form->date_time,
+                'ip'=>$form->ip,
+                'browser'=>$form->browser,
+
+
+])->execute();
+                Yii::$app->session->setFlash('success' , 'Your message has been successfully added to DB');
+
+            }
+
+
+
+
+        return $this->render('messages',
+            [   'form' => $form,
+                'user_name' => $user_name,
+                'email' => $email,
+                'captcha' => [
+                'class' => 'yii\captcha\CaptchaAction',
+                    'user_name' => $user_name,
+
+
     ],
             ]);
     }
@@ -183,13 +137,17 @@ class SiteController extends Controller
 
     public function actionGetMessages()
     {
-        $messages = Messages::find();
+        $messages =  Yii::$app->db->createCommand('SELECT * FROM messages')
+            ->queryAll();
+        $messages_load =   Yii::$app->db->createCommand('SELECT * FROM messages')
+            ->queryAll();
 
 
         $pagination = new Pagination(
             [
                 'defaultPageSize' => 25,
-                'totalCount'=> $messages->count()
+                'totalCount'=> Yii::$app->db->createCommand('SELECT COUNT(*) FROM messages')
+                    ->queryScalar(),
             ]
         );
 
@@ -213,28 +171,40 @@ class SiteController extends Controller
 
             $or = Yii::$app->request->get('order');
 
+        $sql = 'SELECT * FROM `messages`  order by '.$sortBy.' '.$or.'  limit '.$pagination->limit.' offset '.$pagination->offset;
+        $messages = Yii::$app->db->createCommand
+        ($sql)
+            ->queryAll();
 
-        $messages = $messages->offset($pagination->offset)
-            ->limit($pagination->limit)
-            ->orderBy("$sortBy $or")
-            ->all();
 
+            $sql = $sql = 'SELECT * FROM `messages`  order by '.$sortBy.' '.$or;
+            $messages_load =  Yii::$app->db->createCommand
+            ($sql)
+                ->queryAll();
 
         }
 
         else
         {
-            $messages = $messages->offset($pagination->offset)
-                ->limit($pagination->limit)
-                ->orderBy('date_time desc')
-                ->all();
+            $sql = 'SELECT * FROM `messages`  order by `date_time` desc limit '.$pagination->limit.' offset '.$pagination->offset;
+            $messages = Yii::$app->db->createCommand
+            ($sql)
+                ->queryAll();
+
+
+
+
+            $messages_load = Yii::$app->db->createCommand  ('SELECT * FROM `messages`  order By `date_time` desc')
+                ->queryAll();
         }
 
 
         if (Yii::$app->request->get('del'))
         {
-            $post = Messages::findOne(Yii::$app->request->get('del'));
-            $post->delete();
+            $del_id = 'id = '.Yii::$app->request->get('del');
+            $post = Yii::$app->db->createCommand()->delete('messages', $del_id)->execute();
+
+
 
         }
 
@@ -247,7 +217,6 @@ class SiteController extends Controller
             $url = str_replace( '&del='.Yii::$app->request->get('del'), '',  $url);
             ?>
             <script language="JavaScript">
-                //                alert("Информация добавлена в базу");
                 window.location.href = "<?= $url ?>"
             </script>
             <?php
@@ -330,6 +299,7 @@ class SiteController extends Controller
 //=========================================================================================
         return $this->render('get-messages' ,[
             'messages'=>$messages,
+            'messages_load'=>$messages_load,
             'pagination'=>$pagination,
 //            'name'=> yii::$app->session->get('name'),
         'url'=>$url,
